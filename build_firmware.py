@@ -106,7 +106,7 @@ def build_read_print (arg_list):
     global error_msg
     result = '        writer_print(TYPE_STRING, "{");\r\n'
     cnt = len(arg_list)
-    for i in xrange(cnt):
+    for i in range(cnt):
         if not arg_list[i]: continue;
         t = arg_list[i][0]
         name = arg_list[i][1]
@@ -152,7 +152,7 @@ def build_reg_read_arg_type (arg_list):
     global error_msg
     result = ""
     length = min(4, len(arg_list))
-    for i in xrange(length):
+    for i in range(length):
         if not arg_list[i]:
             continue
         t = arg_list[i][0]
@@ -216,7 +216,7 @@ def build_reg_write_arg_type (arg_list):
     global error_msg
     result = ""
     length = min(4, len(arg_list))
-    for i in xrange(length):
+    for i in range(length):
         if not arg_list[i]:
             continue
         t = arg_list[i][0]
@@ -417,7 +417,7 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
             f = open('%s/drivers.json' % cur_dir, 'r')
             json_drivers = json.load(f)
             f.close()
-        except Exception,e:
+        except Exception as e:
             error_msg = str(e)
             #return False
 
@@ -429,7 +429,7 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
             f = open('%s/connection_config.json' % user_build_dir, 'r')
             json_connections = json.load(f)
             f.close()
-        except Exception,e:
+        except Exception as e:
             error_msg = str(e)
             #return False
 
@@ -476,7 +476,7 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
                 yaml.safe_dump(config, f)
 
 
-        except Exception,e:
+        except Exception as e:
             error_msg = str(e)
             #return False
 
@@ -488,11 +488,11 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
             f = open('%s/connection_config.yaml' % user_build_dir, 'r')
             config = yaml.load(f)
             f.close()
-        except Exception,e:
+        except Exception as e:
             error_msg = str(e)
             return False
 
-    print config
+    print(config)
 
     GEN_DIR = user_build_dir
 
@@ -612,8 +612,8 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
             cmd = 'cd %s;make clean;make 2>&1|tee build.log' % (user_build_dir)
         else:
             cmd = 'cd %s;make clean;make > build.log 2>&1' % (user_build_dir)
-        print '---- start to build app 1 ---'
-        print cmd
+        print('---- start to build app 1 ---')
+        print(cmd)
         os.system(cmd)
 
         with open(user_build_dir + "/build.log", 'r') as f_build_log:
@@ -621,7 +621,7 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
             for line in content:
                 if line.find("error:") > -1 or line.find("make:") > -1 or line.find("undefined reference to") > -1:
                     if VERBOSE:
-                        print "\r\n".join(content)
+                        print("\r\n".join(content))
                     error_msg = line
                     return False
 
@@ -632,8 +632,8 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
             cmd = 'cd %s;make clean;make 2>&1|tee build.log' % (user_build_dir)
         else:
             cmd = 'cd %s;make clean;make > build.log 2>&1' % (user_build_dir)
-        print '---- start to build app 2 ---'
-        print cmd
+        print('---- start to build app 2 ---')
+        print(cmd)
         os.system(cmd)
 
         with open(user_build_dir + "/build.log", 'r') as f_build_log:
@@ -641,7 +641,7 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
             for line in content:
                 if line.find("error:") > -1 or line.find("make:") > -1 or line.find("undefined reference to") > -1:
                     if VERBOSE:
-                        print "\r\n".join(content)
+                        print("\r\n".join(content))
                     error_msg = line
                     return False
 
@@ -669,7 +669,7 @@ if __name__ == '__main__':
     server_config.ALWAYS_BUILD_FROM_SRC = True
 
     if not gen_and_build(build_phase, app_num, user_id, node_sn, node_name, server_ip, None, None):
-        print get_error_msg()
+        print(get_error_msg())
 
 
 

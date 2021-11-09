@@ -123,7 +123,7 @@ class DeviceConnection(object):
                 gen_log.debug("receive length != 64")
                 raise gen.Return(100) # length not match 64
 
-            if re.match(r'@\d\.\d', str1[0:4]):
+            if re.match(r'@\d\.\d', str1[0:4].decode()):
                 #new version firmware
                 self._wait_hello_future = self.stream.read_bytes(4) #read another 4bytes
                 str2 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future, io_loop=ioloop.IOLoop.current())
@@ -138,12 +138,12 @@ class DeviceConnection(object):
                     raise gen.Return(100) # length not match 64
 
                 str1 += str2
-                self.fw_version = float(str1[1:4])
-                sn = str1[4:36]
+                self.fw_version = float(str1[1:4].decode())
+                sn = str1[4:36].decode()
                 sig = str1[36:68]
             else:
                 #for version < 1.1
-                sn = str1[0:32]
+                sn = str1[0:32].decode()
                 sig = str1[32:64]
 
             gen_log.info("accepted sn: %s @fw_version %.1f" % (sn, self.fw_version))
@@ -166,9 +166,9 @@ class DeviceConnection(object):
             key = node['private_key']
             key = key.encode("ascii")
 
-            sig0 = hmac.new(key, msg=sn, digestmod=hashlib.sha256).digest()
-            gen_log.debug("sig:     "+ binascii.hexlify(sig))
-            gen_log.debug("sig calc:"+ binascii.hexlify(sig0))
+            sig0 = hmac.new(key, msg=sn.encode(), digestmod=hashlib.sha256).digest()
+            gen_log.debug("sig:     "+ binascii.hexlify(sig).decode())
+            gen_log.debug("sig calc:"+ binascii.hexlify(sig0).decode())
 
             if sig0 == sig:
                 #send IV + AES Key
@@ -201,7 +201,7 @@ class DeviceConnection(object):
                     self.cipher_up = self.cipher_down
 
                 cipher_text = self.iv + self.cipher_down.encrypt(pad("hello"))
-                gen_log.debug("cipher text: "+ cipher_text.encode('hex'))
+                gen_log.debug("cipher text: "+ binascii.hexlify(cipher_text).decode())
                 self.stream.write(cipher_text)
 
                 user_event = {"node_sn": self.sn, "event_type": "stat", "event_data": {"online": True, "at": self.device_server.role}}
@@ -229,7 +229,7 @@ class DeviceConnection(object):
             msg = ""
             try:
                 msg = yield self.stream.read_bytes(16)
-                msg = unpad(self.cipher_up.decrypt(msg))
+                msg = unpad(self.cipher_up.decrypt(msg).decode())
                 line += msg
 
                 while line.find('\r\n') > -1:
@@ -315,7 +315,7 @@ class DeviceConnection(object):
                             self.recv_msg = json_obj
                             self.recv_msg_cond.notify()
                             yield gen.moment
-                    except Exception, e:
+                    except Exception as e:
                         gen_log.warn("Node %s: %s" % (self.node_id ,str(e)))
 
             except iostream.StreamClosedError:
@@ -324,7 +324,7 @@ class DeviceConnection(object):
                 return
             except ValueError:
                 gen_log.warn("Node %s: %s can not be decoded into json" % (self.node_id, piece))
-            except Exception,e:
+            except Exception as e:
                 gen_log.error("Node %s: %s" % (self.node_id ,str(e)))
                 self.kill_myself()
                 return
@@ -412,7 +412,7 @@ class DeviceConnection(object):
                 raise gen.Return((False, {"status":500, "msg":"unexpected error 1"}))
         except gen.Return:
             raise
-        except Exception,e:
+        except Exception as e:
             gen_log.error(e)
             raise gen.Return((False, {"status":500, "msg":"Node %s: %s" % (self.node_id, str(e))}))
         finally:
@@ -586,7 +586,7 @@ def main():
                 gen_log.info("Creating Database in: %s" % database_path)
                 try:
                     shutil.copyfile('database.db',database_path)
-                except OSError, e:
+                except OSError as e:
                     gen_log.error(e)
             else:
                 gen_log.error("Unable to locate default database")
@@ -607,7 +607,7 @@ def main():
         cur.execute('SELECT SQLITE_VERSION()')
         data = cur.fetchone()
         gen_log.info("SQLite version: %s" % data[0])
-    except lite.Error, e:
+    except lite.Error as e:
         gen_log.error(e)
         sys.exit(1)
 

@@ -24,10 +24,10 @@ import json
 import sqlite3 as lite
 import re
 import jwt
-import md5
+import hmac
 import hashlib
 import base64
-import httplib
+import http.client
 import uuid
 from shutil import copy
 from build_firmware import *
@@ -136,7 +136,12 @@ class BaseHandler(CorsMixin, web.RequestHandler):
         return str(uuid.uuid1()).replace('-','')
 
     def gen_token (self, email):
-        return jwt.encode({'email': email,'uuid':self.get_uuid()}, TOKEN_SECRET, algorithm='HS256').split(".")[2]
+        def base64url_encode(input: bytes) -> bytes:
+            return base64.urlsafe_b64encode(input).replace(b"=", b"")
+
+        header = '{"alg":"HS256","typ":"JWT"}'
+        payload = f'{{"email":"{email}","uuid":"{self.get_uuid()}"}}'
+        return base64url_encode(hmac.new(TOKEN_SECRET.encode(), base64url_encode(header.encode()) + b'.' + base64url_encode(payload.encode()), hashlib.sha256).digest()).decode()
 
 class IndexHandler(BaseHandler):
     @web.authenticated
@@ -175,10 +180,10 @@ class UserCreateHandler(BaseHandler):
             if len(rows) > 0:
                 self.resp(400, "This email already registered")
                 return
-            cur.execute("INSERT INTO users(user_id,email,pwd,token,created_at) VALUES(?,?,?,?,datetime('now'))", (self.gen_uuid_without_dash(), email, md5.new(passwd).hexdigest(), token))
+            cur.execute("INSERT INTO users(user_id,email,pwd,token,created_at) VALUES(?,?,?,?,datetime('now'))", (self.gen_uuid_without_dash(), email, hashlib.md5(passwd.encode()).hexdigest(), token))
         except web.HTTPError:
             raise
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
         finally:
@@ -189,7 +194,7 @@ class UserCreateHandler(BaseHandler):
 
 class ExtUsersHandler(BaseHandler):
     def get (self, uri):
-        print uri
+        print(uri)
         self.resp(404, "Please post to this url")
 
     def post(self, uri):
@@ -232,7 +237,7 @@ class ExtUsersHandler(BaseHandler):
                             (self.gen_uuid_without_dash(), email, token, bind_id, bind_region))
         except web.HTTPError:
             raise
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
         finally:
@@ -259,10 +264,10 @@ class UserChangePasswordHandler(BaseHandler):
         cur = self.application.cur
         try:
             new_token = self.gen_token(email)
-            cur.execute('update users set pwd=?,token=? where email=?', (md5.new(passwd).hexdigest(),new_token, email))
+            cur.execute('update users set pwd=?,token=? where email=?', (hashlib.md5(passwd.encode()).hexdigest(),new_token, email))
             self.resp(200, meta={"token": new_token})
             gen_log.info("%s succeed to change password"%(email))
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
         finally:
@@ -296,7 +301,7 @@ class UserRetrievePasswordHandler(BaseHandler):
                 return
 
             new_password = self.gen_token(email)[0:6]
-            cur.execute('update users set pwd=? where email=?', (md5.new(new_password).hexdigest(), email))
+            cur.execute('update users set pwd=? where email=?', (hashlib.md5(new_password.encode()).hexdigest(), email))
 
             #start a thread sending email here
             ioloop.IOLoop.current().add_callback(self.start_thread_send_email, email, new_password)
@@ -304,7 +309,7 @@ class UserRetrievePasswordHandler(BaseHandler):
             self.resp(200)
         except web.HTTPError:
             raise
-        except Exception,e:
+        except Exception as e:
             self.resp(500, str(e))
             return
         finally:
@@ -327,7 +332,7 @@ class UserRetrievePasswordHandler(BaseHandler):
         s = smtplib.SMTP_SSL(server_config.smtp_server)
         try:
             s.login(server_config.smtp_user, server_config.smtp_pwd)
-        except Exception,e:
+        except Exception as e:
             gen_log.error(e)
             return
 
@@ -352,7 +357,7 @@ IOT Team from Seeed
 """ % (sender, receiver, new_password)
         try:
             s.sendmail(sender, receiver, message)
-        except Exception,e:
+        except Exception as e:
             gen_log.error(e)
             return
         gen_log.info('sent new password %s to %s' % (new_password, email))
@@ -387,7 +392,7 @@ class UserLoginHandler(BaseHandler):
 
         cur = self.application.cur
         try:
-            cur.execute('select * from users where email=? and pwd=?', (email, md5.new(passwd).hexdigest()))
+            cur.execute('select * from users where email=? and pwd=?', (email, hashlib.md5(passwd.encode()).hexdigest()))
             row = cur.fetchone()
             if not row:
                 self.resp(400, "Login failed - invalid email or password")
@@ -395,7 +400,7 @@ class UserLoginHandler(BaseHandler):
             self.resp(200, meta={"token": row["token"], "user_id": row["user_id"]})
         except web.HTTPError:
             raise
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
         finally:
@@ -463,14 +468,14 @@ class NodeCreateHandler(BaseHandler):
         email = user["email"]
         user_id = user["user_id"]
         node_id = self.gen_uuid_without_dash()
-        node_sn = md5.new(self.get_uuid()).hexdigest()
-        node_key = md5.new(self.gen_token(email)).hexdigest()  #we need the key to be 32bytes long too
+        node_sn = hashlib.md5(self.get_uuid().encode()).hexdigest()
+        node_key = hashlib.md5(self.gen_token(email).encode()).hexdigest()  #we need the key to be 32bytes long too
 
         cur = self.application.cur
         try:
             cur.execute("INSERT INTO nodes(node_id,user_id,node_sn,name,private_key,board) VALUES(?,?,?,?,?,?)", (node_id, user_id, node_sn,node_name, node_key, board))
             self.resp(200, meta={"node_sn":node_sn,"node_key": node_key})
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
         finally:
@@ -502,7 +507,7 @@ class NodeListHandler(BaseHandler):
                 nodes.append({"name":r["name"], "node_sn":r["node_sn"], "node_key":r['private_key'], "online":online, \
                               "dataxserver":r["dataxserver"], "board":board})
             self.resp(200, meta={"nodes":nodes})
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
 
@@ -535,7 +540,7 @@ class NodeInfoHandler(BaseHandler):
                 self.resp(400, "Node not exist")
         except web.HTTPError:
             raise
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
 
@@ -569,7 +574,7 @@ class NodeRenameHandler(BaseHandler):
                 self.resp(400, "Node not exist")
         except web.HTTPError:
             raise
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
         finally:
@@ -607,7 +612,7 @@ class NodeDeleteHandler(BaseHandler):
 
         except web.HTTPError:
             raise
-        except Exception,e:
+        except Exception as e:
             self.resp(500,str(e))
             return
         finally:
@@ -690,7 +695,6 @@ class NodeReadWriteHandler(NodeBaseHandler):
             if not conn.killed:
                 try:
                     cmd = "GET /%s\r\n"%(uri)
-                    cmd = cmd.encode("ascii")
                     ok, resp = yield conn.submit_and_wait_resp (cmd, "resp_get")
                     if ok:
                         self.post_request('get', uri, resp)
@@ -701,7 +705,7 @@ class NodeReadWriteHandler(NodeBaseHandler):
                         self.resp(200,meta=resp['msg'])
                 except web.HTTPError:
                     raise
-                except Exception,e:
+                except Exception as e:
                     gen_log.error(e)
                 return
         self.resp(404, "Node is offline")
@@ -729,7 +733,6 @@ class NodeReadWriteHandler(NodeBaseHandler):
             if not conn.killed:
                 try:
                     cmd = "POST /%s\r\n"%(uri)
-                    cmd = cmd.encode("ascii")
                     ok, resp = yield conn.submit_and_wait_resp (cmd, "resp_post")
                     if ok:
                         self.post_request('post', uri, resp)
@@ -740,7 +743,7 @@ class NodeReadWriteHandler(NodeBaseHandler):
                         self.resp(200,meta=resp['msg'])
                 except web.HTTPError:
                     raise
-                except Exception,e:
+                except Exception as e:
                     gen_log.error(e)
                 return
 
@@ -766,9 +769,9 @@ class NodeFunctionHandler(NodeReadWriteHandler):
         arg = None
         try:
             arg = self.get_body_argument('arg')
-            print arg
+            print(arg)
             arg = base64.b64encode(arg)
-            print arg
+            print(arg)
         except web.MissingArgumentError:
             self.resp(400, "Missing function's argument - arg")
             return
@@ -786,7 +789,6 @@ class NodeFunctionHandler(NodeReadWriteHandler):
             if not conn.killed:
                 try:
                     cmd = "POST /%s/%s\r\n"%(uri.strip('/'), arg)
-                    cmd = cmd.encode("ascii")
                     ok, resp = yield conn.submit_and_wait_resp (cmd, "resp_post")
                     if 'status' in resp and resp['status'] != 200:
                         msg = resp['msg'] or 'Unknown reason'
@@ -795,7 +797,7 @@ class NodeFunctionHandler(NodeReadWriteHandler):
                         self.resp(200,meta=resp['msg'])
                 except web.HTTPError:
                     raise
-                except Exception,e:
+                except Exception as e:
                     gen_log.error(e)
                 return
         self.resp(404, "Node is offline")
@@ -837,7 +839,7 @@ class NodeSettingHandler(NodeReadWriteHandler):
                 try:
                     cur = self.application.cur
                     cur.execute('update nodes set dataxserver=? where node_id=?', (url, self.node['node_id']))
-                except Exception,e:
+                except Exception as e:
                     gen_log.error(e)
                 finally:
                     self.application.conn.commit()
@@ -984,7 +986,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
                 if not self.cur_conn:
                     self.node_offline()
                     break
-            except Exception, e:
+            except Exception as e:
                 gen_log.error('Websocket error when fetch_event: %s' % str(e))
             if event:
                 self.write_message(event)
@@ -1022,7 +1024,7 @@ class NodeGetConfigHandler(NodeBaseHandler):
             self.resp(200,  meta={"config":json.load(json_file), "type":"json"})
             json_file.close()
             return
-        except Exception,e:
+        except Exception as e:
             gen_log.warn("Exception when reading json file:"+ str(e))
 
         try:
@@ -1031,7 +1033,7 @@ class NodeGetConfigHandler(NodeBaseHandler):
             self.resp(200, meta={"config": yaml_file.read(), "type":"yaml"})
             yaml_file.close()
             return
-        except Exception,e:
+        except Exception as e:
             gen_log.error("Exception when reading yaml file:" + str(e))
             self.resp(404, "Config not found")
 
@@ -1197,7 +1199,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
         #open the yaml file for reading
         try:
             config_file = open('%s/connection_config.yaml'%user_build_dir,'r')
-        except Exception,e:
+        except Exception as e:
             gen_log.error("Exception when reading yaml file:"+ str(e))
             self.resp(404, "No resources, the node has not been configured jet.")
             return
@@ -1206,17 +1208,17 @@ class NodeGetResourcesHandler(NodeBaseHandler):
         try:
             drv_db_file = open('%s/drivers.json' % cur_dir,'r')
             drv_doc_file= open('%s/driver_docs.json' % cur_dir,'r')
-        except Exception,e:
+        except Exception as e:
             gen_log.error("Exception when reading grove drivers database file:"+ str(e))
             self.resp(404, "Internal error, the grove drivers database file is corrupted.")
             return
 
         #calculate the checksum of 2 file
         sha1 = hashlib.sha1()
-        sha1.update(config_file.read() + self.vhost_url_base)
+        sha1.update((config_file.read() + self.vhost_url_base).encode())
         chksum_config = sha1.hexdigest()
         sha1 = hashlib.sha1()
-        sha1.update(drv_db_file.read() + drv_doc_file.read())
+        sha1.update((drv_db_file.read() + drv_doc_file.read()).encode())
         chksum_drv_db = sha1.hexdigest()
 
         #query the database, if 2 file not changed, echo cached html
@@ -1245,13 +1247,13 @@ class NodeGetResourcesHandler(NodeBaseHandler):
         drv_doc_file.seek(0)
         try:
             config = yaml.load(config_file)
-        except yaml.YAMLError, err:
+        except yaml.YAMLError as err:
             gen_log.error("Error in parsing yaml file:"+ str(err))
             self.resp(404, "No resources, the configuration file is corrupted.")
             return
         except web.HTTPError:
             raise
-        except Exception,e:
+        except Exception as e:
             gen_log.error("Error in loading yaml file:"+ str(e))
             self.resp(404, "No resources, the configuration file is corrupted.")
             return
@@ -1262,7 +1264,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
         try:
             drv_db = json.load(drv_db_file)
             drv_docs = json.load(drv_doc_file)
-        except Exception,e:
+        except Exception as e:
             gen_log.error("Error in parsing grove drivers database file:"+ str(e))
             self.resp(404, "Internal error, the grove drivers database file is corrupted.")
             return
@@ -1393,7 +1395,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
 
                 try:
                     json_connections = json.loads(self.request.body)
-                except Exception,e:
+                except Exception as e:
                     self.resp(400, 'invalid json: ' + str(e))
                     return
 
@@ -1403,7 +1405,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                     self.resp(400, "config json invalid!")
                     return
 
-                with open("%s/connection_config.json" % user_build_dir, 'wr') as f:
+                with open("%s/connection_config.json" % user_build_dir, 'w') as f:
                     f.write(json.dumps(json_connections))
             else:
                 #fall back to old version yaml config file
@@ -1442,7 +1444,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                     gen_log.info('Get to know node %s is running app %s' % (self.node_id, resp['msg']))
                 else:
                     gen_log.warn('Failed while getting app number for node %s: %s' % (self.node_id, str(resp)))
-            except Exception,e:
+            except Exception as e:
                 gen_log.error(e)
 
         #try to create a thread
@@ -1463,7 +1465,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
         try:
             self.state_happened[self.node_sn] = []
             self.state_waiters[self.node_sn] = []
-        except Exception,e:
+        except Exception as e:
             pass
 
         #log the building
@@ -1473,7 +1475,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                 cur.execute("insert into builds (node_id, build_date, build_starttime, build_endtime) \
                             values(?,date('now'),datetime('now'),datetime('now'))", (self.node_id, ))
                 self.cur_build_id = cur.lastrowid
-            except Exception,e:
+            except Exception as e:
                 gen_log.error("Failed to log the building record: %s" % str(e))
             finally:
                 self.application.conn.commit()
@@ -1488,7 +1490,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
     @gen.coroutine
     def build_thread (self, build_phase, app_num, user_id, node_name, node_sn, json_drivers, json_connections):
 
-        node_name = node_name.encode('unicode_escape').replace('\\u', 'x')
+        node_name = node_name.encode('unicode_escape').decode().replace('\\u', 'x')
 
         gen_log.debug('build_thread for node %s app %s' % (node_name, app_num))
 
@@ -1512,7 +1514,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
             try:
                 cur = self.application.cur
                 cur.execute("delete from builds where bld_id=?", (self.cur_build_id, ))
-            except Exception,e:
+            except Exception as e:
                 gen_log.error("Failed to delete the building record: %s" % str(e))
             finally:
                 self.application.conn.commit()
@@ -1527,7 +1529,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
         try:
             cur = self.application.cur
             cur.execute("update builds set build_endtime=datetime('now') where bld_id=?", (self.cur_build_id, ))
-        except Exception,e:
+        except Exception as e:
             gen_log.error("Failed to log the building record: %s" % str(e))
         finally:
             self.application.conn.commit()
@@ -1551,14 +1553,13 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                 self.cur_conn.ota_notify_done_future = Future()
 
                 cmd = "OTA\r\n"
-                cmd = cmd.encode("ascii")
                 self.cur_conn.submit_cmd(cmd)
 
                 yield gen.with_timeout(timedelta(seconds=10), self.cur_conn.ota_notify_done_future, io_loop=ioloop.IOLoop.current())
                 break
             except gen.TimeoutError:
                 pass
-            except Exception,e:
+            except Exception as e:
                 gen_log.error(e)
                 #save state
                 state = ("error", "notify error: "+str(e))
@@ -1655,7 +1656,7 @@ class OTAFirmwareSendingHandler(BaseHandler):
 
         sn = sn[:-4]
         try:
-            sn = base64.b64decode(sn)
+            sn = base64.b64decode(sn).decode()
         except:
             sn = ""
 
@@ -1746,7 +1747,7 @@ class OTAFirmwareSendingHandler(BaseHandler):
                         state = ('going', 'Verifying the firmware...')
                         self.send_notification(state)
                         break
-                except Exception,e:
+                except Exception as e:
                     gen_log.error('node %s error when sending binary file: %s' % (node_id, str(e)))
                     state = ('error', 'Error when sending binary file. Please retry.')
                     self.send_notification(state)
@@ -1829,7 +1830,7 @@ class COTFHandler(NodeBaseHandler):
                 project_src = None
                 try:
                     project_src = json.loads(self.request.body)
-                except Exception,e:
+                except Exception as e:
                     self.resp(400, 'invalid json: ' + str(e))
                     return
 

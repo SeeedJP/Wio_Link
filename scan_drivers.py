@@ -83,27 +83,27 @@ def parse_class_header_file (file):
     doc = {}
     doc_methods = {}
     doc_events = {}
-    print file
+    print(file)
     content = open(file, 'r').read()
 
     json_dump = ""
     try:
         json_dump = json.dumps(content);
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
 
     if not json_dump:
         try:
             content = unicode(content,"ISO-8859-1")
             json_dump = json.dumps(content)
-        except Exception,e:
-            print e
+        except Exception as e:
+            print(e)
     if not json_dump:
         try:
             content = unicode(content,"GB2312")
             json_dump = json.dumps(content)
-        except Exception,e:
-            print e
+        except Exception as e:
+            print(e)
 
     if not json_dump:
         return ("Encoding of source file is not one of: utf8,iso-8859-1,gb2312", {}, {})
@@ -111,7 +111,7 @@ def parse_class_header_file (file):
 
     ##grove name
     grove_name = re.findall(r'^//GROVE_NAME\s+"(.+)"', content, re.M)
-    print grove_name
+    print(grove_name)
     if grove_name:
         patterns["GroveName"] = grove_name[0].rstrip('\r')
     else:
@@ -119,7 +119,7 @@ def parse_class_header_file (file):
 
     ##SKU
     sku = re.findall(r'^//SKU\s+([a-zA-z0-9\-_]+)', content, re.M)
-    print sku
+    print(sku)
     if sku:
         patterns["SKU"] = sku[0].rstrip('\r')
     else:
@@ -128,14 +128,14 @@ def parse_class_header_file (file):
 
     ##interface type
     if_type = re.findall(r'^//IF_TYPE\s+([a-zA-z0-9]+)', content, re.M)
-    print if_type
+    print(if_type)
     if if_type:
         patterns["InterfaceType"] = if_type[0]
     else:
         return ("can not find IF_TYPE in %s"%file,{}, {})
     ##image url
     image_url = re.findall(r'^//IMAGE_URL\s+(.+)', content, re.M)
-    print image_url
+    print(image_url)
     if image_url:
         patterns["ImageURL"] = image_url[0].rstrip('\r')
     else:
@@ -143,7 +143,7 @@ def parse_class_header_file (file):
 
     ##DESCRIPTION
     description = re.findall(r'^//DESCRIPTION\s+"(.+)"', content, re.M)
-    print description
+    print(description)
     if description:
         patterns["Description"] = description[0].rstrip('\r')
     else:
@@ -151,7 +151,7 @@ def parse_class_header_file (file):
 
     ##HACK_GUIDE_URL
     hack_guide_url = re.findall(r'^//HACK_GUIDE_URL\s+(.+)', content, re.M)
-    print hack_guide_url
+    print(hack_guide_url)
     if hack_guide_url:
         patterns["NeedHack"] = True
         patterns["HackGuideURL"] = hack_guide_url[0].rstrip('\r')
@@ -161,7 +161,7 @@ def parse_class_header_file (file):
 
     ##WIKI_URL
     wiki_url = re.findall(r'^//WIKI_URL\s+(.+)', content, re.M)
-    print wiki_url
+    print(wiki_url)
     if wiki_url:
         patterns["WikiURL"] = wiki_url[0].rstrip('\r')
     else:
@@ -169,7 +169,7 @@ def parse_class_header_file (file):
 
     ##ADDED_AT
     added_at = re.findall(r'^//ADDED_AT\s+"(.+)"', content, re.M)
-    print added_at
+    print(added_at)
     if added_at:
         date_str = added_at[0].rstrip('\r')
         _time = None
@@ -178,21 +178,21 @@ def parse_class_header_file (file):
             try:
                 _time = systime.strptime(date_str, f)
                 break
-            except Exception,e:
-                print e
+            except Exception as e:
+                print(e)
                 _time = None
         if not _time:
             return ("%s is not the valid date format, should be YYYY-mm-dd"%date_str, {},{})
         else:
             timestamp = int(systime.mktime(_time))
         patterns["AddedAt"] = timestamp
-        print timestamp
+        print(timestamp)
     else:
         return ("can not find ADDED_AT in %s"%file, {},{})
 
     ##AUTHOR
     author = re.findall(r'^//AUTHOR\s+"(.+)"', content, re.M)
-    print author
+    print(author)
     if author:
         patterns["Author"] = author[0].rstrip('\r')
     else:
@@ -200,14 +200,14 @@ def parse_class_header_file (file):
 
     ##class name
     class_name = re.findall(r'^class\s+([a-zA-z0-9_]+)', content, re.M)
-    print class_name
+    print(class_name)
     if class_name:
         patterns["ClassName"] = class_name[0]
     else:
         return ("can not find class name in %s"%file,{}, {})
     ##construct function arg list
     arg_list = re.findall(r'%s\((.*)\);'%class_name[0], content, re.M)
-    print arg_list
+    print(arg_list)
     if arg_list:
         patterns["ConstructArgList"] = [x.strip(" ") for x in arg_list[0].split(',')]
     else:
@@ -215,7 +215,7 @@ def parse_class_header_file (file):
 
     ## read functions
     read_functions = re.findall(r'^\s+bool\s+(read_[a-zA-z0-9_]+)\((.*)\).*$', content, re.M)
-    print read_functions
+    print(read_functions)
     reads = {}
     for func in read_functions:
         args = func[1].split(',')
@@ -255,7 +255,7 @@ def parse_class_header_file (file):
     patterns["Reads"] = reads
 
     read_functions_with_doc = find_comments('read', content)
-    print read_functions_with_doc
+    print(read_functions_with_doc)
     for func in read_functions_with_doc:
         paras = re.findall(r'@param (\w*)[ ]?[-:]?[ ]?(.*)$', func[0], re.M)
         dict_paras = {}
@@ -269,7 +269,7 @@ def parse_class_header_file (file):
 
     ## write functions
     write_functions = re.findall(r'^\s+bool\s+(write_[a-zA-z0-9_]+)\((.*)\).*$', content, re.M)
-    print write_functions
+    print(write_functions)
     writes = {}
     for func in write_functions:
         args = func[1].split(',')
@@ -301,7 +301,7 @@ def parse_class_header_file (file):
     patterns["Writes"] = writes
 
     write_functions_with_doc = find_comments('write', content)
-    print write_functions_with_doc
+    print(write_functions_with_doc)
     for func in write_functions_with_doc:
         paras = re.findall(r'@param (\w*)[ ]?[-:]?[ ]?(.*)$', func[0], re.M)
         dict_paras = {}
@@ -316,19 +316,19 @@ def parse_class_header_file (file):
     ## event
     #    DEFINE_EVENT(fire, SULI_EDT_INT);
     event_attachments = re.findall(r'^\s+DEFINE_EVENT\((.*)\s*,\s*(.*)\).*$', content, re.M)
-    print event_attachments
+    print(event_attachments)
     events = {}
     for ev in event_attachments:
         if ev[1] in TYPE_MAP:
             events[ev[0]] = TYPE_MAP[ev[1]]
         else:
-            print 'event data type %s not supported' % ev[1]
+            print('event data type %s not supported' % ev[1])
             sys.exit(1)
 
     patterns["Events"] = events
 
     event_attachments_with_doc = find_comments('event', content)
-    print event_attachments_with_doc
+    print(event_attachments_with_doc)
     for event in event_attachments_with_doc:
         briefs = re.findall(r'(?!\* @)\* (.*)', event[0], re.M)
         brief = '\n'.join(briefs)
@@ -351,7 +351,7 @@ def parse_class_header_file (file):
 
     ## on power on
     on_power_on_func = re.findall(r'^\s+bool\s+on_power_on\(\s*\).*$', content, re.M)
-    print on_power_on_func
+    print(on_power_on_func)
     if len(on_power_on_func) > 0:
         patterns["HasPowerOnFunc"] = True
     else:
@@ -359,7 +359,7 @@ def parse_class_header_file (file):
 
     ## on power off
     on_power_off_func = re.findall(r'^\s+bool\s+on_power_off\(\s*\).*$', content, re.M)
-    print on_power_off_func
+    print(on_power_off_func)
     if len(on_power_off_func) > 0:
         patterns["HasPowerOffFunc"] = True
     else:
@@ -373,7 +373,7 @@ def parse_class_header_file (file):
 
 if __name__ == '__main__':
 
-    print __file__
+    print(__file__)
     cur_dir = os.path.split(os.path.realpath(__file__))[0]
     grove_drivers_abs_dir = os.path.abspath(cur_dir + "/grove_drivers")
     grove_database = []
@@ -386,7 +386,7 @@ if __name__ == '__main__':
         grove_info = {}
         grove_doc = {}
         if os.path.isdir(full_dir) and f != '.git':
-            print full_dir
+            print(full_dir)
             files = parse_one_driver_dir(full_dir)
             class_file = get_class_header_file(files,f)
             if class_file:
@@ -397,13 +397,13 @@ if __name__ == '__main__':
                     grove_info['Files'] = files
                     grove_info['ClassFile'] = class_file
                     grove_info = dict(grove_info, **patterns)
-                    print grove_info
+                    print(grove_info)
                     grove_database.append(grove_info)
                     grove_doc['ID'] = grove_id
                     grove_doc['Methods'] = doc['Methods']
                     grove_doc['Events'] = doc['Events']
                     grove_doc['GroveName'] = grove_info['GroveName']
-                    print grove_doc
+                    print(grove_doc)
                     grove_docs.append(grove_doc)
                     grove_id = grove_id + 1
                 else:
@@ -417,16 +417,16 @@ if __name__ == '__main__':
 
     #print grove_database
 
-    print "========="
-    print grove_docs
-    print ""
+    print("=========")
+    print(grove_docs)
+    print("")
 
     if not failed:
         open("%s/drivers.json"%cur_dir,"w").write(json.dumps(grove_database))
         open("%s/driver_docs.json"%cur_dir,"w").write(json.dumps(grove_docs))
         open("%s/scan_status.json"%cur_dir,"w").write('{"result":"OK", "msg":"scanned %d grove drivers at %s"}' % (len(grove_database), str(datetime.now())))
     else:
-        print failed_msg
+        print(failed_msg)
         open("%s/scan_status.json" % cur_dir,
              "w").write('{"result":"Failed", "msg":"%s"}' % (failed_msg))
         sys.exit(1)
@@ -446,12 +446,12 @@ if __name__ == '__main__':
 
 
     cmd = 'cd %s;make clean_libs;make libs|tee build.log 2>&1' % (user_build_dir)
-    print '---- start to build the prebuilt libs ---'
-    print cmd
+    print('---- start to build the prebuilt libs ---')
+    print(cmd)
     os.system(cmd)
 
     content = open(user_build_dir+"/build.log", 'r').readlines()
     for line in content:
         if line.find("error:") > -1 or line.find("make:") > -1 or line.find("undefined reference to") > -1:
-            print line
+            print(line)
             sys.exit(1)

@@ -105,7 +105,7 @@ class DeviceConnection(object):
     @gen.coroutine
     def secure_write (self, data):
         if self.cipher_down:
-            cipher_text = self.cipher_down.encrypt(pad(data))
+            cipher_text = self.cipher_down.encrypt(pad(data).encode())
             yield self.stream.write(cipher_text)
 
     @gen.coroutine
@@ -200,7 +200,7 @@ class DeviceConnection(object):
                     #for old version
                     self.cipher_up = self.cipher_down
 
-                cipher_text = self.iv + self.cipher_down.encrypt(pad("hello"))
+                cipher_text = self.iv + self.cipher_down.encrypt(pad("hello").encode())
                 gen_log.debug("cipher text: "+ binascii.hexlify(cipher_text).decode())
                 self.stream.write(cipher_text)
 

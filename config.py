@@ -31,3 +31,4 @@ auto_reload_for_debug = False
 # The secrect for external user login
 ext_user_secret = 'secret'
 
+paid_server = False

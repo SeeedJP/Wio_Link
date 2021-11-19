@@ -160,6 +160,10 @@ class UserCreateHandler(BaseHandler):
         self.resp(404, "Please post to this url")
 
     def post(self):
+        if server_config.paid_server:
+            self.resp(400, "User registration is not available because this is a paid server.")
+            return
+
         email = self.get_argument("email","")
         passwd = self.get_argument("password","")
         if not email:
@@ -198,6 +202,10 @@ class ExtUsersHandler(BaseHandler):
         self.resp(404, "Please post to this url")
 
     def post(self, uri):
+        if server_config.paid_server:
+            self.resp(400, "User registration is not available because this is a paid server.")
+            return
+
         email = self.get_argument("email","")
         bind_id = self.get_argument("bind_id","")
         bind_region = self.get_argument("bind_region","")

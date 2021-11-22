@@ -74,7 +74,7 @@ class BaseHandler(CorsMixin, web.RequestHandler):
         if token:
             try:
                 cur = self.application.cur
-                cur.execute('select * from users where token="%s"'%token)
+                cur.execute('select user_id,email,token from users where token="%s"'%token)
                 rows = cur.fetchall()
                 if len(rows) > 0:
                     user = rows[0]
@@ -179,7 +179,7 @@ class UserCreateHandler(BaseHandler):
         cur = self.application.cur
         token = self.gen_token(email)
         try:
-            cur.execute('select * from users where email="%s"'%email)
+            cur.execute('select user_id from users where email="%s"'%email)
             rows = cur.fetchall()
             if len(rows) > 0:
                 self.resp(400, "This email already registered")
@@ -227,14 +227,14 @@ class ExtUsersHandler(BaseHandler):
         try:
             create_new = False
             if email:
-                cur.execute('SELECT * FROM users WHERE email=?', (email,))
+                cur.execute('SELECT user_id FROM users WHERE email=?', (email,))
                 rows = cur.fetchall()
                 if len(rows) > 0:
                     cur.execute('UPDATE users SET token=?,ext_bind_id=?,ext_bind_region=? WHERE email=?', (token, bind_id, bind_region, email))
                 else:
                     create_new = True
             else:
-                cur.execute('SELECT * FROM users WHERE ext_bind_id=?', (bind_id,))
+                cur.execute('SELECT user_id FROM users WHERE ext_bind_id=?', (bind_id,))
                 rows = cur.fetchall()
                 if len(rows) > 0:
                     cur.execute('UPDATE users SET token=? WHERE ext_bind_id=?', (token, bind_id))
@@ -302,7 +302,7 @@ class UserRetrievePasswordHandler(BaseHandler):
 
         cur = self.application.cur
         try:
-            cur.execute('select * from users where email="%s"' % email)
+            cur.execute('select user_id from users where email="%s"' % email)
             row = cur.fetchone()
             if not row:
                 self.resp(404, "No account registered with this email")
@@ -400,7 +400,7 @@ class UserLoginHandler(BaseHandler):
 
         cur = self.application.cur
         try:
-            cur.execute('select * from users where email=? and pwd=?', (email, hashlib.md5(passwd.encode()).hexdigest()))
+            cur.execute('select user_id,token from users where email=? and pwd=?', (email, hashlib.md5(passwd.encode()).hexdigest()))
             row = cur.fetchone()
             if not row:
                 self.resp(400, "Login failed - invalid email or password")
@@ -865,7 +865,7 @@ class NodesEventHandler(websocket.WebSocketHandler):
         if token:
             try:
                 cur = self.application.cur
-                cur.execute('select * from users where token="%s"' % token)
+                cur.execute('select user_id,email,token from users where token="%s"' % token)
                 user = cur.fetchone()
                 gen_log.info("get current user in NodesEventHandler, id: %s, email: %s" % (user['user_id'], user['email']))
             except:

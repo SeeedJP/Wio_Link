@@ -24,7 +24,7 @@ CREATE INDEX node_id_index ON resources (node_id);
 
 ALTER TABLE users RENAME TO sqlitestudio_temp_table;
 
-CREATE TABLE users (user_id VARCHAR (120), email VARCHAR (256), pwd VARCHAR (256), token VARCHAR (120), ext_bind_id VARCHAR (120), ext_bind_region VARCHAR (120), created_at DATETIME);
+CREATE TABLE users (user_id VARCHAR (120), email VARCHAR (256), pwd VARCHAR (256), token VARCHAR (120), ext_bind_id VARCHAR (120), ext_bind_region VARCHAR (120), created_at DATETIME, max_node_count INTEGER);
 
 INSERT INTO users (user_id, email, pwd, token, ext_bind_id, ext_bind_region, created_at) SELECT user_id, email, pwd, token, ext_bind_id, ext_bind_region, created_at FROM sqlitestudio_temp_table;
 

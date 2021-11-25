@@ -74,7 +74,7 @@ class BaseHandler(CorsMixin, web.RequestHandler):
         if token:
             try:
                 cur = self.application.cur
-                cur.execute('select user_id,email,token from users where token="%s"'%token)
+                cur.execute('select user_id,email,token,max_node_count from users where token="%s"'%token)
                 rows = cur.fetchall()
                 if len(rows) > 0:
                     user = rows[0]
@@ -475,11 +475,20 @@ class NodeCreateHandler(BaseHandler):
         user = self.current_user
         email = user["email"]
         user_id = user["user_id"]
+        max_node_count = user["max_node_count"]
         node_id = self.gen_uuid_without_dash()
         node_sn = hashlib.md5(self.get_uuid().encode()).hexdigest()
         node_key = hashlib.md5(self.gen_token(email).encode()).hexdigest()  #we need the key to be 32bytes long too
 
         cur = self.application.cur
+
+        if max_node_count is not None:
+            cur.execute("SELECT COUNT(node_id) FROM nodes WHERE user_id=?", (user_id,))
+            node_count = cur.fetchone()[0]
+            if node_count + 1 > max_node_count:
+                self.resp(500,f"You cannot add a device.\nYour max node count is {max_node_count}.")
+                return
+        
         try:
             cur.execute("INSERT INTO nodes(node_id,user_id,node_sn,name,private_key,board) VALUES(?,?,?,?,?,?)", (node_id, user_id, node_sn,node_name, node_key, board))
             self.resp(200, meta={"node_sn":node_sn,"node_key": node_key})

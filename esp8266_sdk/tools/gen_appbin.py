@@ -263,12 +263,15 @@ def gen_appbin():
             sys.exit(0)
     if boot_mode == '1' or boot_mode == '2':
         all_bin_crc = getFileCRC(flash_bin_name)
-        #print all_bin_crc
+        #print(hex(all_bin_crc))
+        if sys.version_info[0] == 3:
+            all_bin_crc = all_bin_crc - ((all_bin_crc & 0x80000000) << 1)
+        #print(hex(all_bin_crc))
         if all_bin_crc < 0:
             all_bin_crc = abs(all_bin_crc) - 1
         else :
             all_bin_crc = abs(all_bin_crc) + 1
-        #print all_bin_crc
+        #print(hex(all_bin_crc))
         write_file(flash_bin_name,all_bin_crc.to_bytes(4, 'little'))
     cmd = 'rm eagle.app.sym'
     os.system(cmd)

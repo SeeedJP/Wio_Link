@@ -8,6 +8,15 @@
             "program": "server.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
-        }
+        },
+        {
+            "name": "wiocli.py",
+            "type": "python",
+            "request": "launch",
+            "program": "tools/wiocli.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": []
+        },
     ]
 }

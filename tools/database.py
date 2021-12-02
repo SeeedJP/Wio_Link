@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sqlite3 as lite
 from contextlib import contextmanager
 import uuid
@@ -11,7 +12,16 @@ import hmac
 class Database:
 
     def __init__(self):
-        self.__con = lite.connect("database.db")
+        database_path = os.environ.get('WIO_LINK_DATABASE_FOLDER')
+        if database_path:
+            database_path = os.path.join(database_path, 'database.db')
+        else:
+            database_path = 'database.db'
+
+        if not os.path.exists(database_path):
+            raise Exception(f"Cannot found {database_path} file.")
+
+        self.__con = lite.connect(database_path)
         self.__con.row_factory = lite.Row
 
     def __del__(self):

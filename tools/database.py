@@ -27,6 +27,17 @@ class Database:
     def __del__(self):
         self.__con.close()
 
+
+    def get_stats(self) -> dict:
+        with _managed_cursor(self.__con.cursor()) as cur:
+            cur.execute("SELECT COUNT(user_id) FROM users")
+            user_count = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(node_id) FROM nodes")
+            node_count = cur.fetchone()[0]
+        
+        return { "user_count": user_count, "node_count": node_count };
+
+
     def get_user_list(self, email: str = None) -> list:
         with _managed_cursor(self.__con.cursor()) as cur:
             if email is None:

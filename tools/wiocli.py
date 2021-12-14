@@ -2,6 +2,7 @@
 
 """
 Usage:
+  wiocli database stats
   wiocli database user list [--email <email>]
   wiocli database user add <email> <password> [<max_node_count>]
   wiocli database user remove [--email <email>]
@@ -9,6 +10,22 @@ Usage:
 
 from docopt import docopt
 from database import Database
+import datetime
+
+
+def stats(args):
+    db = Database()
+    stats = db.get_stats()
+
+    print(
+        "\t".join(
+            [
+                str(datetime.datetime.now()),
+                str(stats["user_count"]),
+                str(stats["node_count"]),
+            ]
+        )
+    )
 
 
 def user_list(args):
@@ -18,13 +35,24 @@ def user_list(args):
     rows = db.get_user_list(email=email)
 
     for row in rows:
-        print("\t".join([row["user_id"], row["email"], row["created_at"], str(row["max_node_count"])]))
+        print(
+            "\t".join(
+                [
+                    row["user_id"],
+                    row["email"],
+                    row["created_at"],
+                    str(row["max_node_count"]),
+                ]
+            )
+        )
 
 
 def user_add(args):
     email = args["<email>"]
     password = args["<password>"]
-    max_node_count = int(args["<max_node_count>"]) if args["<max_node_count>"] is not None else None
+    max_node_count = (
+        int(args["<max_node_count>"]) if args["<max_node_count>"] is not None else None
+    )
 
     db = Database()
     user_id = db.add_user(email, password, max_node_count)
@@ -54,6 +82,8 @@ def user(args):
 def database(args):
     if args["user"]:
         user(args)
+    elif args["stats"]:
+        stats(args)
 
 
 def main(args):

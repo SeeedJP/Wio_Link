@@ -37,9 +37,9 @@ static unsigned char twi_sda, twi_scl;
 #endif
 
 #if F_CPU == FCPU80
-#define TWI_CLOCK_STRETCH 200
+#define TWI_CLOCK_STRETCH 1300  // 300us
 #else
-#define TWI_CLOCK_STRETCH 400
+#define TWI_CLOCK_STRETCH 2600  // 300us
 #endif
 
 void twi_setClock(unsigned int freq){
@@ -95,7 +95,7 @@ static bool twi_write_stop(void){
   SDA_LOW();
   twi_delay(twi_dcount);
   SCL_HIGH();
-  while (SCL_READ() == 0 && (i++) < TWI_CLOCK_STRETCH);// Clock stretching (up to 100us)
+  while (SCL_READ() == 0 && (i++) < TWI_CLOCK_STRETCH);// Clock stretching
   twi_delay(twi_dcount);
   SDA_HIGH();
   twi_delay(twi_dcount);
@@ -110,7 +110,7 @@ static bool twi_write_bit(bool bit) {
   else SDA_LOW();
   twi_delay(twi_dcount+1);
   SCL_HIGH();
-  while (SCL_READ() == 0 && (i++) < TWI_CLOCK_STRETCH);// Clock stretching (up to 100us)
+  while (SCL_READ() == 0 && (i++) < TWI_CLOCK_STRETCH);// Clock stretching
   twi_delay(twi_dcount);
   return true;
 }
@@ -121,7 +121,7 @@ static bool twi_read_bit(void) {
   SDA_HIGH();
   twi_delay(twi_dcount+2);
   SCL_HIGH();
-  while (SCL_READ() == 0 && (i++) < TWI_CLOCK_STRETCH);// Clock stretching (up to 100us)
+  while (SCL_READ() == 0 && (i++) < TWI_CLOCK_STRETCH);// Clock stretching
   bool bit = SDA_READ();
   twi_delay(twi_dcount);
   return bit;

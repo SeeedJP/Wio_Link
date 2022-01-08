@@ -166,7 +166,7 @@ unsigned char twi_readFrom(unsigned char address, unsigned char* buf, unsigned i
   unsigned int i;
   if(!twi_write_start()) return 4;//line busy
   if(!twi_write_byte(((address << 1) | 1) & 0xFF)) return 2;//received NACK on transmit of address
-  for(i=0; i<len; i++) buf[i] = twi_read_byte(false);
+  for(i=0; i<len; i++) buf[i] = twi_read_byte(i + 1 >= len);
   if(sendStop) twi_write_stop();
   i = 0;
   while(SDA_READ() == 0 && (i++) < 10){

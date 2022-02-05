@@ -155,8 +155,15 @@ class CacheInventory(object):
         """
         total = len(self._cache)
         expired = 0
-        for name, item in self._cache.items():
-            if self._has_expired(item):
-                expired += 1
+        while True:
+            expired_flag = False
+            for name, item in self._cache.items():
+                if self._has_expired(item):
+                    expired_flag = True
+                    expired += 1
+                    break
+            if not expired_flag:
+                break
+
         gen_log.debug('Cache housekeeper completed [%d total] [%d removed]', total, expired)
 

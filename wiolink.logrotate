@@ -1,0 +1,10 @@
+/var/log/wiolink/log.txt
+{
+    daily
+    rotate 90
+    missingok
+    notifempty
+    copytruncate
+    dateext
+    dateformat .%Y-%m-%d
+}

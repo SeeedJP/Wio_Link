@@ -1042,7 +1042,7 @@ class NodeGetConfigHandler(NodeBaseHandler):
             json_file.close()
             return
         except Exception as e:
-            gen_log.warn("Exception when reading json file:"+ str(e))
+            gen_log.warning("Exception when reading json file:"+ str(e))
 
         try:
             # fall back to old version connection_config.yaml
@@ -1460,7 +1460,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                     app_num = '1' if resp['msg'] in [2,'2'] else '2'
                     gen_log.info('Get to know node %s is running app %s' % (self.node_id, resp['msg']))
                 else:
-                    gen_log.warn('Failed while getting app number for node %s: %s' % (self.node_id, str(resp)))
+                    gen_log.warning('Failed while getting app number for node %s: %s' % (self.node_id, str(resp)))
             except Exception as e:
                 gen_log.error(e)
 

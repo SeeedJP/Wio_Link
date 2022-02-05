@@ -316,14 +316,14 @@ class DeviceConnection(object):
                             self.recv_msg_cond.notify()
                             yield gen.moment
                     except Exception as e:
-                        gen_log.warn("Node %s: %s" % (self.node_id ,str(e)))
+                        gen_log.warning("Node %s: %s" % (self.node_id ,str(e)))
 
             except iostream.StreamClosedError:
                 gen_log.error("StreamClosedError when reading from node %s on %s channel" % (self.node_id, self.device_server.role))
                 self.kill_myself()
                 return
             except ValueError:
-                gen_log.warn("Node %s: %s can not be decoded into json" % (self.node_id, piece))
+                gen_log.warning("Node %s: %s can not be decoded into json" % (self.node_id, piece))
             except Exception as e:
                 gen_log.error("Node %s: %s" % (self.node_id ,str(e)))
                 self.kill_myself()
@@ -391,7 +391,7 @@ class DeviceConnection(object):
         self.pending_request_cnt += 1
         if self.pending_request_cnt > PENDING_REQ_CNT:
             self.pending_request_cnt = PENDING_REQ_CNT
-            gen_log.warn('Node %s: request too fast' % self.node_id)
+            gen_log.warning('Node %s: request too fast' % self.node_id)
             raise gen.Return((False, {"status":400, "msg":"request too fast"}))
 
         yield self.send_msg_sem.acquire()

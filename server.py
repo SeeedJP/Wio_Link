@@ -117,7 +117,7 @@ class DeviceConnection(object):
             self.idle_time = 0  #reset the idle time counter
 
             if len(str1) != 64:
-                self.stream.write("sorry\r\n")
+                self.stream.write(b"sorry\r\n")
                 yield gen.sleep(0.1)
                 self.kill_myself()
                 gen_log.debug("receive length != 64")
@@ -131,7 +131,7 @@ class DeviceConnection(object):
                 self.idle_time = 0  #reset the idle time counter
 
                 if len(str2) != 4:
-                    self.stream.write("sorry\r\n")
+                    self.stream.write(b"sorry\r\n")
                     yield gen.sleep(0.1)
                     self.kill_myself()
                     gen_log.debug("receive length != 68")
@@ -157,7 +157,7 @@ class DeviceConnection(object):
                 node = rows[0]
 
             if not node:
-                self.stream.write("sorry\r\n")
+                self.stream.write(b"sorry\r\n")
                 yield gen.sleep(0.1)
                 self.kill_myself()
                 gen_log.error("node sn not found")
@@ -209,7 +209,7 @@ class DeviceConnection(object):
 
                 raise gen.Return(0)
             else:
-                self.stream.write("sorry\r\n")
+                self.stream.write(b"sorry\r\n")
                 yield gen.sleep(0.1)
                 self.kill_myself()
                 gen_log.error("signature not match: %s %s" % (sig, sig0))

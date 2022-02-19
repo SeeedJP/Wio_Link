@@ -956,7 +956,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
         self.connected = False
 
     def find_node_conn(self, key):
-        for sn, c in self.conns.iteritems():
+        for sn, c in self.conns.items():
             if c.private_key == key and not c.killed:
                 return c
         return None

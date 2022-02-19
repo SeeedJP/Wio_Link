@@ -173,7 +173,7 @@ class DeviceConnection(object):
             if sig0 == sig:
                 #send IV + AES Key
                 self.sn = sn
-                self.private_key = key
+                self.private_key = key.decode()
                 self.node_id = str(node['node_id'])
                 self.user_id = str(node['user_id'])
                 gen_log.info("valid hello packet from node %s" % self.node_id)

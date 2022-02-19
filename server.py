@@ -123,6 +123,7 @@ class DeviceConnection(object):
                 gen_log.debug("receive length != 64")
                 raise gen.Return(100) # length not match 64
 
+            gen_log.info("Received data in wait_hello is %s" % str1.hex())
             if re.match(r'@\d\.\d', str1[0:4].decode()):
                 #new version firmware
                 self._wait_hello_future = self.stream.read_bytes(4) #read another 4bytes

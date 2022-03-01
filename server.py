@@ -123,29 +123,33 @@ class DeviceConnection(object):
                 gen_log.debug("receive length != 64")
                 raise gen.Return(100) # length not match 64
 
-            gen_log.info("Received data in wait_hello is %s" % str1.hex())
-            if re.match(r'@\d\.\d', str1[0:4].decode()):
-                #new version firmware
-                self._wait_hello_future = self.stream.read_bytes(4) #read another 4bytes
-                str2 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future, io_loop=ioloop.IOLoop.current())
+            try:
+                if re.match(r'@\d\.\d', str1[0:4].decode()):
+                    #new version firmware
+                    self._wait_hello_future = self.stream.read_bytes(4) #read another 4bytes
+                    str2 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future, io_loop=ioloop.IOLoop.current())
 
-                self.idle_time = 0  #reset the idle time counter
+                    self.idle_time = 0  #reset the idle time counter
 
-                if len(str2) != 4:
-                    self.stream.write(b"sorry\r\n")
-                    yield gen.sleep(0.1)
-                    self.kill_myself()
-                    gen_log.debug("receive length != 68")
-                    raise gen.Return(100) # length not match 64
+                    if len(str2) != 4:
+                        self.stream.write(b"sorry\r\n")
+                        yield gen.sleep(0.1)
+                        self.kill_myself()
+                        gen_log.debug("receive length != 68")
+                        raise gen.Return(100) # length not match 64
 
-                str1 += str2
-                self.fw_version = float(str1[1:4].decode())
-                sn = str1[4:36].decode()
-                sig = str1[36:68]
-            else:
-                #for version < 1.1
-                sn = str1[0:32].decode()
-                sig = str1[32:64]
+                    str1 += str2
+                    self.fw_version = float(str1[1:4].decode())
+                    sn = str1[4:36].decode()
+                    sig = str1[36:68]
+                else:
+                    #for version < 1.1
+                    sn = str1[0:32].decode()
+                    sig = str1[32:64]
+            except UnicodeDecodeError as e:
+                gen_log.error("UnicodeDecodeError in wait_hello(). reason=%s, address=%s:%d, str1=%s" % (e.reason, self.address[0], self.address[1], str1.hex()))
+                self.kill_myself()
+                raise gen.Return(2)
 
             gen_log.info("accepted sn: %s @fw_version %.1f" % (sn, self.fw_version))
 

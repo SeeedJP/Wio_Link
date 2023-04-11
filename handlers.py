@@ -344,23 +344,23 @@ class UserRetrievePasswordHandler(BaseHandler):
             gen_log.error(e)
             return
 
-        sender = 'no_reply@seeed.cc'
+        sender = 'noreply@seeed.co.jp'
         receiver = email
 
-        message = """From: Wio_Link <%s>
+        message = """From: Wio Link <%s>
 To: <%s>
-Subject: The password for your account of iot.seeed.cc has been retrieved
+Subject: The password for your account of wiolink.seeed.co.jp has been retrieved
 
 Dear User,
 
-Thanks for your interest in iot.seeed.cc, the new password for your account is
+Thanks for your interest in Wio Link, the new password for your account is
 %s
 
 Please change it as soon as possible.
 
 Thank you!
 
-IOT Team from Seeed
+Seeed K.K.
 
 """ % (sender, receiver, new_password)
         try:

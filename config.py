@@ -18,8 +18,8 @@ ALWAYS_BUILD_FROM_SRC = False
 ###############################
 # Set the smtp server which is used to send the password retreive email
 smtp_server = 'smtp.sendgrid.net'
-smtp_user = 'yours'
-smtp_pwd  = 'yours'
+smtp_user = 'apikey'
+smtp_pwd  = ''
 
 
 ###############################

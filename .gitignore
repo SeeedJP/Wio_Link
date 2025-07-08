@@ -3,3 +3,4 @@ drivers.json
 driver_docs.json
 scan_status.json
 /users_build/
+/venv/

@@ -71,7 +71,6 @@ from tornado.log import *
 from tornado.concurrent import Future
 from tornado.queues import Queue
 from tornado.locks import Semaphore, Condition
-from tornado_cors import CorsMixin
 
 
 
@@ -489,8 +488,13 @@ class DeviceServer(TCPServer):
 
 
 class NodeBaseHandler(CorsMixin, web.RequestHandler):
-    CORS_ORIGIN = '*'
-    CORS_HEADERS = 'Content-Type'
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+
+    def options(self, *args, **kwargs):
+        self.set_header("Access-Control-Allow-Headers", "Content-Type")
+        self.set_status(204)
+        self.finish()
 
     def initialize (self, conns, state_waiters, state_happened):
         self.conns = conns

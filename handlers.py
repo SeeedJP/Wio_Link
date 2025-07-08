@@ -49,7 +49,6 @@ from tornado import escape
 from tornado.options import define, options
 from tornado.log import *
 from tornado.concurrent import Future
-from tornado_cors import CorsMixin
 from tornado.ioloop import IOLoop
 
 from coroutine_msgbus import *
@@ -57,9 +56,14 @@ from coroutine_msgbus import *
 TOKEN_SECRET = "!@#$%^&*RG)))))))JM<==TTTT==>((((((&^HVFT767JJH"
 
 
-class BaseHandler(CorsMixin, web.RequestHandler):
-    CORS_ORIGIN = '*'
-    CORS_HEADERS = 'Content-Type'
+class BaseHandler(web.RequestHandler):
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+
+    def options(self, *args, **kwargs):
+        self.set_header("Access-Control-Allow-Headers", "Content-Type")
+        self.set_status(204)
+        self.finish()
 
     def get_current_user(self):
         user = None

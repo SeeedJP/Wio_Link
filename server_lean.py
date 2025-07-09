@@ -71,6 +71,7 @@ from tornado.log import *
 from tornado.concurrent import Future
 from tornado.queues import Queue
 from tornado.locks import Semaphore, Condition
+from tornado.gen import with_timeout
 
 
 
@@ -129,8 +130,7 @@ class DeviceConnection(object):
     def wait_hello (self):
         try:
             self._wait_hello_future = self.stream.read_bytes(64) #read 64bytes: 32bytes SN + 32bytes signature signed with private key
-            str1 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future,
-                                         io_loop=self.stream.io_loop)
+            str1 = yield with_timeout(timedelta(seconds=10), self._wait_hello_future)
             self.idle_time = 0  #reset the idle time counter
 
             if len(str1) != 64:
@@ -143,7 +143,7 @@ class DeviceConnection(object):
             if re.match(r'@\d\.\d', str1[0:4]):
                 #new version firmware
                 self._wait_hello_future = self.stream.read_bytes(4) #read another 4bytes
-                str2 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future, io_loop=self.stream.io_loop)
+                str2 = yield with_timeout(timedelta(seconds=10), self._wait_hello_future)
 
                 self.idle_time = 0  #reset the idle time counter
 
@@ -771,7 +771,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
             self.future = self.wait_event_post()
             event = None
             try:
-                event = yield gen.with_timeout(timedelta(seconds=5), self.future, io_loop=ioloop.IOLoop.current())
+                event = yield with_timeout(timedelta(seconds=5), self.future)
             except gen.TimeoutError:
                 if not self.cur_conn or self.cur_conn.killed:
                     gen_log.debug("node %s is offline" % message)

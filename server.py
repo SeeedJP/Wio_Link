@@ -47,6 +47,7 @@ from tornado.log import *
 from tornado.concurrent import Future
 from tornado.queues import Queue
 from tornado.locks import Semaphore, Condition
+from tornado.gen import with_timeout
 
 import config as server_config
 from handlers import *
@@ -112,8 +113,7 @@ class DeviceConnection(object):
     def wait_hello (self):
         try:
             self._wait_hello_future = self.stream.read_bytes(64) #read 64bytes: 32bytes SN + 32bytes signature signed with private key
-            str1 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future,
-                                          io_loop=ioloop.IOLoop.current())
+            str1 = yield with_timeout(timedelta(seconds=10), self._wait_hello_future)
             self.idle_time = 0  #reset the idle time counter
 
             if len(str1) != 64:
@@ -127,7 +127,7 @@ class DeviceConnection(object):
                 if re.match(r'@\d\.\d', str1[0:4].decode()):
                     #new version firmware
                     self._wait_hello_future = self.stream.read_bytes(4) #read another 4bytes
-                    str2 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future, io_loop=ioloop.IOLoop.current())
+                    str2 = yield with_timeout(timedelta(seconds=10), self._wait_hello_future)
 
                     self.idle_time = 0  #reset the idle time counter
 

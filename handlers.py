@@ -50,6 +50,7 @@ from tornado.options import define, options
 from tornado.log import *
 from tornado.concurrent import Future
 from tornado.ioloop import IOLoop
+from tornado.gen import with_timeout
 
 from coroutine_msgbus import *
 
@@ -997,7 +998,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
             event = None
             try:
                 self.cur_conn.event_waiters.append(self.future)
-                event = yield gen.with_timeout(timedelta(seconds=5), self.future, io_loop=ioloop.IOLoop.current())
+                event = yield with_timeout(timedelta(seconds=5), self.future)
             except gen.TimeoutError:
                 if self.node_sn in self.conns and not self.conns[self.node_sn].killed:
                     self.cur_conn = self.conns[self.node_sn]
@@ -1576,7 +1577,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                 cmd = "OTA\r\n"
                 self.cur_conn.submit_cmd(cmd)
 
-                yield gen.with_timeout(timedelta(seconds=10), self.cur_conn.ota_notify_done_future, io_loop=ioloop.IOLoop.current())
+                yield with_timeout(timedelta(seconds=10), self.cur_conn.ota_notify_done_future)
                 break
             except gen.TimeoutError:
                 pass
@@ -1642,7 +1643,7 @@ class OTAStatusReportingHandler(NodeBaseHandler):
         if not state and state_future:
             #print state_future
             try:
-                state = yield gen.with_timeout(timedelta(seconds=180), state_future, io_loop=ioloop.IOLoop.current())
+                state = yield with_timeout(timedelta(seconds=180), state_future)
             except gen.TimeoutError:
                 state = ("error", "Time out when waiting new status.")
             except:

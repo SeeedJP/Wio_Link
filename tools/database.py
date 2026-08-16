@@ -24,6 +24,9 @@ class Database:
         self.__con = lite.connect(database_path)
         self.__con.row_factory = lite.Row
 
+        # self.add_user('example@mail.com', 'sunny1')
+        # and add node
+
     def __del__(self):
         self.__con.close()
 
@@ -34,7 +37,7 @@ class Database:
             user_count = cur.fetchone()[0]
             cur.execute("SELECT COUNT(node_id) FROM nodes")
             node_count = cur.fetchone()[0]
-        
+
         return { "user_count": user_count, "node_count": node_count };
 
 

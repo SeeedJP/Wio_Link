@@ -165,7 +165,7 @@ class DeviceConnection(object):
                 self.stream.write(b"sorry\r\n")
                 yield gen.sleep(0.1)
                 self.kill_myself()
-                gen_log.error("node sn not found")
+                gen_log.error(f"node sn not found: {sn}")
                 raise gen.Return(101) #node not found
 
             key = node['private_key']

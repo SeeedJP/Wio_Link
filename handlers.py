@@ -488,7 +488,7 @@ class NodeCreateHandler(BaseHandler):
             if node_count + 1 > max_node_count:
                 self.resp(500,f"You cannot add a device.\nYour max node count is {max_node_count}.")
                 return
-        
+
         try:
             cur.execute("INSERT INTO nodes(node_id,user_id,node_sn,name,private_key,board) VALUES(?,?,?,?,?,?)", (node_id, user_id, node_sn,node_name, node_key, board))
             self.resp(200, meta={"node_sn":node_sn,"node_key": node_key})
@@ -1263,7 +1263,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
         drv_db_file.seek(0)
         drv_doc_file.seek(0)
         try:
-            config = yaml.load(config_file)
+            config = yaml.load(config_file, Loader=yaml.SafeLoader)
         except yaml.YAMLError as err:
             gen_log.error("Error in parsing yaml file:"+ str(err))
             self.resp(404, "No resources, the configuration file is corrupted.")

@@ -1,45 +1,35 @@
-FROM debian
-MAINTAINER Jack Shao "jacky.shaoxg@gmail.com"
+FROM python:3.8-slim-bullseye
 
-#install required packages
+# Install required base packages
 RUN apt-get update && \
-    apt-get install -qqy --force-yes wget openssl python-dev python-pip supervisor vim git
+    apt-get install -y --no-install-recommends wget openssl ca-certificates vim git binutils libc6 libstdc++6 && \
+    rm -rf /var/lib/apt/lists/*
 
-#get the toolchain
-WORKDIR /opt
-RUN dpkg --print-architecture
-RUN /bin/bash -c "if dpkg --print-architecture | grep -q -e x86 -e amd ; then \
-        wget -O xtensa.tar.gz https://github.com/esp8266/Arduino/releases/download/2.3.0/linux64-xtensa-lx106-elf-gb404fb9.tgz; else \
-        wget -O xtensa.tar.gz https://github.com/esp8266/Arduino/releases/download/2.3.0/linuxarm-xtensa-lx106-elf-g46f160f-2.tar.gz; \
-        ln -s /lib/arm-linux-gnueabi/ld-2.24.so /lib/ld-linux-armhf.so.3; fi"
-RUN tar -zxvf xtensa.tar.gz
-ENV PATH /opt/xtensa-lx106-elf/bin:$PATH
+# (Optional) Download and extract xtensa toolchain for aarch64 if OTA builds are needed
+# RUN wget https://github.com/koendv/xtensa-esp32-elf-raspberrypi/releases/download/v8.4.0-2020r3/xtensa-esp32-elf-linux-aarch64-2020r3.tar.gz && \
+#     tar -xzf xtensa-esp32-elf-linux-aarch64-2020r3.tar.gz -C /opt && \
+#     rm xtensa-esp32-elf-linux-aarch64-2020r3.tar.gz
+# ENV PATH="/opt/xtensa-esp32-elf/bin:${PATH}"
 
 
-RUN pip install 'tornado<5'
-RUN pip install PyJWT
-RUN pip install pycrypto
-RUN pip install PyYaml
-RUN pip install tornado-cors
-RUN pip install psutil
+# Create a constraints file that forces pip to use Cython<3
+RUN echo "cython<3" > /tmp/constraints.txt
 
-#add the files into image
+# Python 3 dependencies
+RUN pip install --no-cache-dir 'tornado<5' PyJWT pycryptodome tornado-cors psutil PyYAML
+
+# Add the project files into the image
 RUN mkdir -p /root/wio
 WORKDIR /root/wio
 COPY . /root/wio
-#this is for marina.io builder
-RUN git submodule init || true
-RUN git submodule update || true
-RUN python ./scan_drivers.py
-RUN mv ./update.sh ../update.sh
-RUN chmod a+x ../update.sh
 
-#config supervisor
-RUN mv ./wio_server.conf /etc/supervisor/conf.d/wio_server.conf
-RUN mkdir -p /root/supervisor_log
+# Scan drivers (optional but harmless)
+RUN python3 ./scan_drivers.py || true
 
-#expose ports
+# Expose ports
 EXPOSE 8000 8001 8080 8081
 
-CMD /etc/init.d/supervisor start && /bin/bash
+# Default command (overridden by docker-compose)
+CMD bash
 
+#

@@ -442,6 +442,7 @@ if __name__ == '__main__':
     #os.putenv("SPI_MODE", "QIO")
     #os.putenv("SPI_SIZE_MAP", "6")
 
+    # os.putenv("PATH", "/root/wio/xtensa-lx106-elf/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/wio/xtensa-lx106-elf/bin")
     os.system('cd %s;cp -f ../../Makefile.template ./Makefile ' % user_build_dir)
 
 

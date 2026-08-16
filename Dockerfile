@@ -5,11 +5,25 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends wget openssl ca-certificates vim git binutils libc6 libstdc++6 && \
     rm -rf /var/lib/apt/lists/*
 
-# (Optional) Download and extract xtensa toolchain for aarch64 if OTA builds are needed
-# RUN wget https://github.com/koendv/xtensa-esp32-elf-raspberrypi/releases/download/v8.4.0-2020r3/xtensa-esp32-elf-linux-aarch64-2020r3.tar.gz && \
-#     tar -xzf xtensa-esp32-elf-linux-aarch64-2020r3.tar.gz -C /opt && \
-#     rm xtensa-esp32-elf-linux-aarch64-2020r3.tar.gz
-# ENV PATH="/opt/xtensa-esp32-elf/bin:${PATH}"
+# ESP8266 (xtensa-lx106-elf) cross-compiler toolchain, needed for OTA/driver firmware builds.
+# The prebuilt arm release is a 32-bit armhf binary even on 64-bit (aarch64) hosts like a
+# Raspberry Pi, so armhf multiarch libs are installed to let it run.
+# Verified working source: https://github.com/esp8266/Arduino releases (tag 2.3.0).
+RUN set -ex; \
+    ARCH=$(dpkg --print-architecture); \
+    if echo "$ARCH" | grep -q -e x86 -e amd; then \
+        wget -O /tmp/xtensa.tar.gz https://github.com/esp8266/Arduino/releases/download/2.3.0/linux64-xtensa-lx106-elf-gb404fb9.tgz; \
+    else \
+        dpkg --add-architecture armhf; \
+        apt-get update; \
+        apt-get install -y --no-install-recommends \
+            libc6:armhf libstdc++6:armhf libgcc1:armhf zlib1g:armhf libidn2-0:armhf libunistring2:armhf; \
+        rm -rf /var/lib/apt/lists/*; \
+        wget -O /tmp/xtensa.tar.gz https://github.com/esp8266/Arduino/releases/download/2.3.0/linuxarm-xtensa-lx106-elf-g46f160f-2.tar.gz; \
+    fi; \
+    tar -xzf /tmp/xtensa.tar.gz -C /opt; \
+    rm /tmp/xtensa.tar.gz
+ENV PATH="/opt/xtensa-lx106-elf/bin:${PATH}"
 
 
 # Create a constraints file that forces pip to use Cython<3
@@ -31,5 +45,3 @@ EXPOSE 8000 8001 8080 8081
 
 # Default command (overridden by docker-compose)
 CMD bash
-
-#
